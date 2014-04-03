@@ -8,7 +8,7 @@ from django.db.models import Count, get_model
 from django.template import loader
 from django.core.urlresolvers import reverse
 from django.contrib import messages
-from django.http import HttpResponseRedirect 
+from django.http import HttpResponseRedirect, Http404
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.base import RedirectView
 from django.shortcuts import redirect
@@ -16,18 +16,26 @@ from django.shortcuts import redirect
 logger = logging.getLogger(__name__)
 
 
-class ABTestingSwitchVersionViewMixin(object):
+class ABTestingSwitchVersionView(RedirectView):
 
-	def dispatch(self, request, *args, **kwargs):
+	session_key = 'version'
+	permanent = True
+	query_string = True
+	redirect_url = None
+
+	def dispatch(self, request, version, *args, **kwargs):
+
 		for name, config in settings.ABTESTING_VERSIONS.items():
-
 			url_prefix = config['URL_PREFIX']
-			request.session[self.session_key] = name
-			unversionned_path = request.path[0] + request.path[1:].lstrip(version_prefix)
 
-			version_prefix = '%s/' % _version[0]
-				
-			return HttpResponseRedirect(unversionned_path)
+			if version == url_prefix:
+				url_prefix = config['URL_PREFIX']
+				request.session[self.session_key] = name
+				version_prefix = '%s/' % url_prefix
+				unversionned_path = request.path[0] + request.path[1:].lstrip(version_prefix)
+				self.redirect_url = unversionned_path
+				return redirect(unversionned_path)
+		raise Http404
 
 
 class ABTestingViewMixin(object):
@@ -46,9 +54,11 @@ class ABTestingViewMixin(object):
 			version = request.session[self.session_key]	
 			if version in settings.ABTESTING_VERSIONS:
 				self.version = version
-				template_prefix = settings.ABTESTING_VERSIONS[version]['TEMPLATE_PREFIX']
+				template_prefix = settings.ABTESTING_VERSIONS[version]['TEMPLATES_PREFIX']
 				if template_prefix and template_prefix.strip() != '':	
 					self.version_template_prefix = template_prefix
+
+		print self.version_template_prefix
 
 		self.template_name = self.abtesting_process_template(self.template_name)
 
