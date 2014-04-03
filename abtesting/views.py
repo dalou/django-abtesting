@@ -69,7 +69,12 @@ class ABTestingViewMixin(object):
 
 	def abtesting_process_template(self, template):
 		if self.version_template_prefix:
-			template = ("/%s/" % self.version_template_prefix).join(template.split('/', 1))
+			versionned_template = ("/%s/" % self.version_template_prefix).join(template.split('/', 1))
+			try:
+				django.template.loader.get_template(versionned_template)
+				return versionned_template
+			except django.template.TemplateDoesNotExist:
+				return template
 		return template
 
 
