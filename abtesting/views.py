@@ -5,7 +5,7 @@ import logging
 from django.conf import settings
 from django.views import generic
 from django.db.models import Count, get_model
-from django.template import loader
+from django.template import loader, TemplateDoesNotExist
 from django.core.urlresolvers import reverse
 from django.contrib import messages
 from django.http import HttpResponseRedirect, Http404
@@ -71,9 +71,9 @@ class ABTestingViewMixin(object):
 		if self.version_template_prefix:
 			versionned_template = ("/%s/" % self.version_template_prefix).join(template.split('/', 1))
 			try:
-				django.template.loader.get_template(versionned_template)
+				loader.get_template(versionned_template)
 				return versionned_template
-			except django.template.TemplateDoesNotExist:
+			except TemplateDoesNotExist:
 				return template
 		return template
 
